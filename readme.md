@@ -7,4 +7,4 @@ https://medium.com/@Psr1/exploring-the-sp500-with-r-part-2-asset-analysis-657d3c
 https://github.com/pysr1/medium_sp500/blob/master/Medium_SP500/sp500plot.png?raw=true
 
 
-![sp500] (https://github.com/pysr1/medium_sp500/blob/master/Medium_SP500/sp500plot.png?raw=true)
+! [sp500] (https://github.com/pysr1/medium_sp500/blob/master/Medium_SP500/sp500plot.png?raw=true)
