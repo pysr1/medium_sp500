@@ -1,0 +1,277 @@
+---
+title: "R SP500"
+output: html_notebook
+---
+
+
+In my STAT 287 Data Science 1 class, I used python to analyze the risk of FAANG stocks vs the rest of the SP500.  Unfortunatley, because of class policy I am unable to share the submission or code.  To make sure that I preserve academic integrity I will a completely different programming langauge, R, and not focus on FAANG stocks.  While I do think sharing code is important - I highly respect my Data Science professor, and will uphold his wishes.  I am certain that doing this is ok.
+
+```{r import packages and sp500 prices}
+library(rvest)
+library(tidyverse)
+library(tidyquant)
+library(janitor)
+
+today <- Sys.Date()
+date = today %m+% months(-3)
+# get the URL for the wikipedia page with all SP500 symbols
+url <- "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies"
+# use that URL to scrape the SP500 table using rvest
+tickers <- url %>%
+  read_html() %>%
+  html_nodes(xpath='//*[@id="mw-content-text"]/div/table[1]') %>%
+  html_table()
+#create a list of tickers
+sp500tickers <- tickers[[1]]
+sp500tickers = sp500tickers %>% mutate(Symbol = case_when(Symbol == "BRK.B" ~ "BRK-B",
+                                           Symbol == "BF.B" ~ "BF-B",
+                                            TRUE ~ as.character(Symbol)))
+symbols = sp500tickers$Symbol
+# define a function that retunrs OHLC data with the ticker name
+get_symbols = function(ticker = "AAPL"){
+  df = tq_get(ticker, from = date) %>%as_tibble() %>%  mutate(symbol = rep(ticker, length(date)))
+}
+#create the dataframe of SP500 data by interating over our list of symbols and call our get symbols function each time
+#the map function accomplishes this
+
+tickers_df = map(symbols, get_symbols) %>% bind_rows()
+tickers_df = tickers_df %>% 
+  # left join with wikipedia data
+  left_join(sp500tickers, by = c('symbol' = 'Symbol')) %>% 
+  # make names R compatible
+  clean_names() %>% 
+  # keep only the columns we need
+  select(date:security, gics_sector, gics_sub_industry)
+#tickers_df = tq_get(symbols)
+Rows = dim(tickers_df)[1]
+Columns = dim(tickers_df)[2]
+dimensions = data.frame(Rows, Columns)
+print(dimensions)
+```
+
+We can see that the data contains the open, high, low, close, volume and adjusted close. This type of data is typically called OHLC data.
+
+```{r}
+# look at the first few rows of the data
+head(tickers_df)
+```
+
+I'll do a quick sanity check to make sure that I have all the tickers. There are 505 tickers in the SP500 (505 because some companies, like Google, have multiple asset classes).
+
+```{r}
+tickers_df %>% 
+# select just the symbol column
+select(symbol)%>% 
+# get the distinct values
+distinct()%>% 
+# count the distinct values 
+count() %>% 
+# we can use select to rename columns 
+select("Total Number of Tickers" = n)
+```
+
+```{r}
+tickers_df %>% 
+  head()
+```
+
+
+Another way to get an idea of what the data is like is to plot a few random tickers. I use the sample function to grab 9 random tickers at a time and plot the adjusted closing price. We can see that the data goes grom 2009 up until the most recent SP500 closing date.
+
+```{r}
+# grab 9 random tickers 
+random_tickers = sample(sp500tickers$Symbol, size = 9)
+# filter the dataframe to return only these random tickers and plot
+tickers_df %>% filter(symbol %in% random_tickers) %>% 
+  ggplot(aes(date, adjusted))+
+  geom_smooth(method = 'lm', alpha = 0.3)+
+  geom_line(size = 0.2)+
+  facet_wrap(~symbol, scales = 'free_y')
+```
+
+```{r}
+tickers_df %>% head()
+```
+
+
+
+
+```{r}
+daily_sector = tickers_df %>% group_by(security, gics_sector, symbol) %>% 
+tq_transmute(select     = adjusted, 
+              mutate_fun = periodReturn, 
+              period     = "daily") %>% 
+              ungroup()
+  
+
+daily_sector %>% ggplot(aes(daily.returns))+
+  geom_histogram(bins = 50)+
+  facet_wrap(~gics_sector)
+```
+```{r}
+daily_sector %>% 
+  head()
+```
+
+```{r}
+avg_return =daily_sector %>% group_by(security, gics_sector) %>% summarise(avg_return = round(mean(daily.returns), 4),Volatility = sd(daily.returns)) %>%  arrange(desc(avg_return), desc(Volatility))
+```
+
+```{r}
+
+avg_return %>% head(20) %>% ggplot(aes(reorder(security, -avg_return), avg_return, fill = avg_return))+
+  geom_col()+
+  coord_flip()+
+  labs(title = "Assets With Highest Returns In SP500 Over Past 3 Month", x = "Security", y = "Average Return")+
+  theme_classic()+
+  theme(legend.position="none")
+```
+
+```{r}
+tickers_df %>% 
+  filter(security == 'Dow Inc.') %>% 
+  ggplot(aes(date, adjusted))+
+  geom_line()
+```
+
+
+```{r}
+hardware = c('Intel Corp.', 'Advanced Micro Devices Inc', 'Nvidia Corporation')
+tickers_df %>% 
+  filter(security %in% hardware) %>% 
+  select(date, adjusted, security) %>% 
+  ggplot(aes(date, adjusted))+
+  geom_point()+
+  geom_smooth()+
+  theme_classic()+
+  facet_wrap(~security, scales = 'free_y')
+```
+```{r}
+daily_sector %>% 
+  filter(security %in% hardware) %>% 
+  ggplot(aes(daily.returns))+
+  geom_density(fill = 'grey')+
+  facet_wrap(~security)+
+  theme_classic()
+```
+```{r}
+col = "date"
+daily_sector %>% select(!! col)
+```
+
+
+```{r}
+avg_return %>% tail(20) %>% ggplot(aes(reorder(security, avg_return), avg_return, fill = avg_return))+
+  geom_col()+
+  coord_flip()+
+  labs(title = "Assets With Lowest Returns In SP500 Over Past 3 Month", x = "Security", y = "Average Return")+
+  theme_classic()+
+  theme(legend.position="none")
+```
+
+```{r}
+daily_sector %>% group_by(gics_sector) %>% summarise(Mean_Return = mean(daily.returns)) %>% 
+
+ggplot(aes(reorder(gics_sector, -Mean_Return), Mean_Return, fill = Mean_Return))+
+  geom_col()+
+  coord_flip()+
+  theme_classic()+
+  theme(legend.position="none")+
+  labs(title = "Average Return by Sector Over Last Month", y = "Mean Return", x = "GICS Sector")
+```
+
+
+
+```{r}
+avg_return
+```
+
+
+
+```{r}
+library(bayesboot)
+volat = function(x){
+  x= sd(x,na.rm = T)
+  return(x)
+}
+bayes_boot_vol = function(x, year){
+monthly = daily_sector
+Year = year
+monthly$year = year(daily_sector$date)
+monthly = filter(monthly, year == Year)
+sector = which(monthly$gics_sector == x)
+sector_df = monthly[sector,]
+bb_mean = bayesboot(sector_df$daily.returns, volat, R = 10000) 
+means = bb_mean[1]
+names(means) = 'volat'
+means$industry = rep(x, length(means[1]))
+return(means)
+}
+industries = unique(daily_sector$gics_sector)
+
+create_dfs = function(year){
+map(industries, bayes_boot_vol, year = year) %>% bind_rows() %>% mutate(Year = rep(year, length(industry)))
+}
+```
+
+```{r}
+years= c(2017, 2018)
+end = map(years, create_dfs) %>% bind_rows() %>% mutate(Year = as.factor(Year))
+```
+
+
+
+```{r}
+end %>% ggplot(aes(volat, fill = Year))+
+  geom_histogram()+
+  geom_abline()+
+  facet_wrap(~industry, scale = 'free_y')+
+  theme_classic()
+```
+```{r}
+posterior_samples %>% group_by(industry) %>% summarise(volat = quantile(volat, probs = 0.05)) %>% arrange(volat) %>% ggplot(aes(reorder(industry, -volat), volat)) +geom_col() + theme(axis.text.x = element_text(angle = 90, hjust = 1)) + xlab('Industry')
+```
+```{r}
+library(ggridges)
+ggplot(end, aes(x=volat, y=reorder(industry, volat, group = Year))) +
+   geom_density_ridges(scale = 4) + 
+  scale_fill_cyclical(values = c("blue", "green"), guide = "legend")+
+  ylab('Sector')+
+  ggtitle('Uncertainty in Volatility by SP500 Sector')
+```
+
+```{r}
+library(dplyr)
+library(forcats)
+end %>%
+  mutate(YearFct = fct_rev(as.factor(industry))) %>%
+  ggplot(aes(y = reorder(YearFct, -volat))) +
+  geom_density_ridges(
+    aes(x = volat, fill = paste(YearFct, Year)), 
+    alpha = .8, color = "white", from = min(end$volat), to = max(end$volat)
+  ) +
+  labs(
+    x = "Volatility",
+    y = "Sector",
+    title = "Volatility by SP500 Sector",
+    subtitle = "Red: 2017 \nBlue: 2018"
+  ) +
+  #scale_y_discrete(expand = c(0.01, 0)) +
+  #scale_x_continuous(expand = c(0.01, 0)) +
+  scale_fill_cyclical(
+    breaks = c("2017", "2018"),
+    labels = c('2017' = "2017", '2018' = "2018"),
+    values = c("#ff0000", "#0000ff"),
+    name = "Option", guide = "legend"
+  ) +
+  theme_ridges(grid = FALSE)
+```
+
+
+```{r}
+ ggplot(diamonds, aes(x = price, y = cut, fill = cut)) + 
+   geom_density_ridges(scale = 4) + 
+   scale_fill_cyclical(values = c("blue", "green"), guide = "legend")
+```
+
+ 

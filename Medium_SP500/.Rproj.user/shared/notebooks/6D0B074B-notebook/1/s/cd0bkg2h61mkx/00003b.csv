@@ -1,0 +1,7 @@
+"0","Sys.setenv(""plotly_username""=""crocker4569883"")"
+"0","Sys.setenv(""plotly_api_key""=""tXgrsVEZTCBegbEhWJ9g"")"
+"0","api_create(p, filename = ""returnVolatilityplot"")"
+"2","Found a grid already named: 'returnVolatilityplot Grid'. Since fileopt='overwrite', I'll try to update it
+"
+"2","Found a plot already named: 'returnVolatilityplot'. Since fileopt='overwrite', I'll try to update it
+"

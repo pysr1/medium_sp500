@@ -1,0 +1,12 @@
+"0","```r
+daily_sector %>% group_by(gics_sector) %>% summarise(Mean_Return = mean(daily.returns)) %>% 
+
+ggplot(aes(reorder(gics_sector, -Mean_Return), Mean_Return, fill = Mean_Return))+
+  geom_col()+
+  coord_flip()+
+  theme_classic()+
+  theme(legend.position=\"none\")+
+  labs(title = \"Average Return by Sector Over Last Month\", y = \"Mean Return\", x = \"GICS Sector\")
+```"
+"1","Error in eval(lhs, parent, parent) : object 'daily_sector' not found
+"

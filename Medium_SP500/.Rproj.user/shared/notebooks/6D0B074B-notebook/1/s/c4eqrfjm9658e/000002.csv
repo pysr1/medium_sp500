@@ -1,0 +1,4 @@
+"0","daily_sector = tickers_df %>% group_by(security, gics_sector, symbol) %>% "
+"0","tq_transmute(select     = adjusted, "
+"0","              mutate_fun = periodReturn, "
+"0","              period     = ""daily"")"

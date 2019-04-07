@@ -1,0 +1,1 @@
+"0","plot + facet_wrap(~gics_sector, ncol = 3) "

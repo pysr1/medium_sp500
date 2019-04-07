@@ -1,0 +1,4 @@
+"0","# pass SP500 ticker ^GSPC to tq_get function"
+"0","one_ticker = tq_get(""^GSPC"", from = date)"
+"0","one_ticker %>% "
+"0","  head()"

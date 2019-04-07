@@ -1,0 +1,8 @@
+"0","zoomed = tickers_df %>% "
+"0","  filter(symbol %in% c('FOX', 'FOXA')) %>% "
+"0","  ggplot(aes(date, adjusted))+"
+"0","  geom_point(alpha = 0.3, color = 'black')+"
+"0","  geom_line()+"
+"0","  facet_wrap(~symbol)+"
+"0","  theme_classic()"
+"0","ggplotly(zoomed)"

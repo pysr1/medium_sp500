@@ -1,0 +1,4 @@
+"0","```r
+col = \"date\"
+daily_sector %>% select(!! col)
+```"

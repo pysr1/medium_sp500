@@ -1,0 +1,5 @@
+"0","ticker = ""GOOGL"""
+"0","tickers_df %>% "
+"0","  filter(symbol == !!ticker) %>% "
+"0","  ggplot(aes(date, adjusted))+"
+"0","  geom_line()"

@@ -1,0 +1,8 @@
+"0","```r
+daily_sector %>% 
+  filter(security %in% hardware) %>% 
+  ggplot(aes(daily.returns))+
+  geom_density(fill = 'grey')+
+  facet_wrap(~security)+
+  theme_classic()
+```"

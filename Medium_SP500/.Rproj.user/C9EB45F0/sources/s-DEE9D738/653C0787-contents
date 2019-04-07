@@ -1,0 +1,272 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+Today I wanted to walk through a quick example, combining scraping, calls to the Yahoo finance api and simple asset analysis.I also want to focus on functional programming and tidy iteration.  Today I will be using the R programming langauge.  If you have read any of my posts on linkedin or Medium in the past, you may have noticed that I ussually program in python.  In general, I prefer the python programming language because it has simpler synthax, wider adoption and is more versatile.  
+
+In the R programming langauge there is a set of packages that make up what is called the **tidyverse**. These packages are mostly maintained by engineers at Rstudio and provide a simple, integrated and uniform way to maninipulate data in R.  
+
+! add tidyverse picture !
+
+I'll start by importing a the packages that I'll need. You'll notice that most of the packages that I use are from the tidyverse.
+
+```{r, package import}
+# for scraping
+library(rvest)
+# blanket import for core tidyverse packages
+library(tidyverse)
+# tidy financial analysis 
+library(tidyquant)
+# tidy data cleaning functions
+library(janitor)
+```
+
+
+The next thing that I will do is define a variable with todays date.  I will then use the subtract 3 months from todays date.  This returns a another date object, indicating what day came 3 months before today.  I will need this because I want to get the last 3 months of OHLC data for each ticker.
+
+```{r}
+# save current system date to a variable
+today <- Sys.Date()
+# subtract 3 months from the current date
+date = today %m+% months(-3)
+print(date)
+```
+
+
+I'm going to use the tidyquant package to get the financial data for all SP500 tickers.  The tidyqunat packages core function is tq_get() which can be used to get various information about stocks.  If I pass a string containing a ticker name to tq_get(), it will return Open, High, Low, Close or OHLC data.
+```{r}
+# pass SP500 ticker ^GSPC to tq_get function
+one_ticker = tq_get("^GSPC", from = date)
+one_ticker %>% 
+  head()
+```
+Theres a few things to note above:
+
+* tq_get() returns a tidy dataframe
+* the ticker name is not in the dataframe
+* the '%>%' operator is called a pipe. It passes the object that proceeds it as the first argument to the function that follows it.
+
+I want this OHLC data for all SP500 tickers. In order to do this I will need to do a few things:
+
+* Get a list of all SP500 tickers
+* Iterate over this list and call tq_get on each element of the list, returning a dataframe for each ticker
+* combine all these dataframes into one dataframe 
+
+Wow! That sounds a little complicated right? luckily, with R, going about this will be pretty simple.  Wikiepdia has a table of all 505 SP500 tickers (some companies, like Google, have multiple asset classes) located at this URL:
+
+https://en.wikipedia.org/wiki/List_of_S%26P_500_companies
+
+To get all the SP500 tickers we are going to scrape this table, using the rvest package.  The Rvest package is a simple scraping package in R that is very similar to python's beautiful soup. In programming, scraping is defined as programatically collecting human readable content from the internent and webpages.
+
+In the code below I scrape the wikipedia table and create a list of all SP500 tickers.  The hardest part of scraping is figuring out the xpath or css to indicate which html nodes to select. I really don't know much about html or css, but using Google Chrome I was able to find the correct xpath.  
+
+```{r}
+# get the URL for the wikipedia page with all SP500 symbols
+url <- "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies"
+# use that URL to scrape the SP500 table using rvest
+tickers <- url %>%
+  # read the HTML from the webpage
+  read_html() %>%
+  # one way to get table
+  #html_nodes(xpath='//*[@id="mw-content-text"]/div/table[1]') %>%
+  # easier way to get table
+  html_nodes(xpath = '//*[@id="constituents"]') %>% 
+  html_table()
+#create a list of tickers
+sp500tickers <- tickers[[1]]
+sp500tickers = sp500tickers %>% mutate(Symbol = case_when(Symbol == "BRK.B" ~ "BRK-B",
+                                           Symbol == "BF.B" ~ "BF-B",
+                                            TRUE ~ as.character(Symbol)))
+```
+
+
+
+```{r}
+symbols = sp500tickers$Symbol
+# define a function that retunrs OHLC data with the ticker name
+get_symbols = function(ticker = "AAPL"){
+  df = tq_get(ticker, from = date)  %>%  mutate(symbol = rep(ticker, length(date)))
+  return(df)
+}
+#create the dataframe of SP500 data by interating over our list of symbols and call our get symbols function each time
+#the map function accomplishes this
+
+tickers_df = map(symbols, get_symbols) %>% bind_rows()
+tickers_df = tickers_df %>% 
+  # left join with wikipedia data
+  left_join(sp500tickers, by = c('symbol' = 'Symbol')) %>% 
+  # make names R compatible
+  clean_names() %>% 
+  # keep only the columns we need
+  select(date:security, gics_sector, gics_sub_industry)
+
+
+#tickers_df = tq_get(symbols)
+Rows = dim(tickers_df)[1]
+Columns = dim(tickers_df)[2]
+dimensions = data.frame(Rows, Columns)
+print(dimensions)
+```
+
+```{r}
+tickers_df %>% head()
+```
+
+```{r}
+ticker = "GOOGL"
+tickers_df %>% 
+  filter(symbol == !!ticker) %>% 
+  ggplot(aes(date, adjusted))+
+  geom_line()
+```
+
+```{r}
+daily_sector = tickers_df %>% group_by(security, gics_sector, symbol) %>% 
+tq_transmute(select     = adjusted, 
+              mutate_fun = periodReturn, 
+              period     = "daily")
+```
+
+
+```{r}
+avg_return =daily_sector %>% 
+  group_by(security, gics_sector, symbol) %>%
+  summarise(avg_return = round(mean(daily.returns), 4),Volatility = sd(daily.returns), cv = Volatility/avg_return) %>%         arrange(desc(avg_return), desc(Volatility))
+avg_return %>% head()
+```
+
+```{r}
+
+avg_return %>% head(20) %>% ggplot(aes(reorder(security, -avg_return), avg_return, fill = avg_return))+
+  geom_col()+
+  coord_flip()+
+  labs(title = "Assets With Highest Returns In SP500 Over Past 3 Month", x = "Security", y = "Average Return")+
+  theme_classic()+
+  theme(legend.position="none")
+```
+
+
+```{r}
+tickers_df %>% 
+  filter(security == 'Dow Inc.') %>% 
+  ggplot(aes(date, adjusted))+
+  geom_line()
+```
+```{r}
+hardware = c('Intel Corp.', 'Advanced Micro Devices Inc', 'Nvidia Corporation')
+tickers_df %>% 
+  filter(security %in% hardware) %>% 
+  select(date, adjusted, security) %>% 
+  ggplot(aes(date, adjusted))+
+  geom_point()+
+  geom_smooth()+
+  theme_classic()+
+  facet_wrap(~security, scales = 'free_y')
+```
+
+```{r}
+daily_sector %>% 
+  filter(security %in% hardware) %>% 
+  ggplot(aes(daily.returns))+
+  geom_density(fill = 'grey')+
+  facet_wrap(~security)+
+  theme_classic()
+```
+
+```{r}
+avg_return %>% tail(20) %>% ggplot(aes(reorder(security, avg_return), avg_return, fill = avg_return))+
+  geom_col()+
+  coord_flip()+
+  labs(title = "Assets With Lowest Returns In SP500 Over Past 3 Month", x = "Security", y = "Average Return")+
+  theme_classic()+
+  theme(legend.position="none")
+```
+```{r}
+daily_sector %>% group_by(gics_sector) %>% summarise(Mean_Return = mean(daily.returns)) %>% 
+
+ggplot(aes(reorder(gics_sector, -Mean_Return), Mean_Return, fill = Mean_Return))+
+  geom_col()+
+  coord_flip()+
+  theme_classic()+
+  theme(legend.position="none")+
+  labs(title = "Average Return by Sector Over Last Month", y = "Mean Return", x = "GICS Sector")
+```
+
+`
+
+
+
+```{r}
+plot = avg_return %>% ggplot(aes(avg_return, Volatility))+
+  geom_text(aes(label = symbol), size = 3)+
+  labs(title = "Average Return vs Volatility Over Last 3 Months In SP500", x = "Average Return", subtitle = "Data Source: Yahoo Finance")+
+  theme_minimal()
+    
+plot 
+```
+
+```{r}
+avg_return = avg_return %>% 
+  mutate(Indicator = case_when(symbol %in% c('FOX', 'FOXA') ~ "Fox Corporation",
+                               TRUE ~ "Rest of SP500"))
+```
+
+
+```{r}
+plot = avg_return %>% ggplot(aes(text = paste("Average Return", avg_return), text = paste("Volatility", Volatility), color = Indicator, text = security))+
+  geom_text(aes(x = avg_return, y = Volatility, label = symbol), size = 3)+
+  labs(title = "Average Return vs Volatility Over Last 3 Months In SP500", x = "Average Return", subtitle = "Data Source: Yahoo Finance")+
+  theme_minimal()
+    
+
+library(plotly)
+ggplotly(plot) 
+```
+
+
+```{r}
+p <- plot_ly(avg_return, x = ~avg_return, y = ~Volatility, type = 'scatter',
+        mode = 'text', text = ~symbol, textposition = 'middle right',
+        color = ~Indicator, colors = 'Set1',
+        textfont = list(size = 10)) %>%
+  layout(title = 'Average Return vs Volatility Over Last 3 Months In SP500', 
+         xaxis = list(title = 'Averaage Return', zeroline = FALSE
+                      ),
+         yaxis = list(title = 'Volatility'
+                      ))
+p
+
+```
+
+```{r}
+symbols = c('FOX', 'FOXA')
+fox = tq_get(symbols, from = '2017/01/01')
+fox %>% 
+  ggplot(aes(date, adjusted))+
+  geom_line()+
+  geom_smooth(method = 'lm', alpha = 0.3)+
+  facet_wrap(~symbol)+
+  theme_classic()
+
+  
+  
+```
+
+
+```{r, fig.height=8}
+plot + facet_wrap(~gics_sector, ncol = 3) 
+```
+
+
+```{r}
+zoomed = tickers_df %>% 
+  filter(symbol %in% c('FOX', 'FOXA')) %>% 
+  ggplot(aes(date, adjusted))+
+  geom_point(alpha = 0.3, color = 'black')+
+  geom_line()+
+  facet_wrap(~symbol)+
+  theme_classic()
+ggplotly(zoomed)
+```
+

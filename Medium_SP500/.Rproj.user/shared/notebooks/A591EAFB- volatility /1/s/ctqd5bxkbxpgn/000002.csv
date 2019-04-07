@@ -1,0 +1,4 @@
+"0","```r
+# look at the first few rows of the data
+head(tickers_df)
+```"

@@ -1,0 +1,8 @@
+"0","daily_sector %>% group_by(gics_sector) %>% summarise(Mean_Return = mean(daily.returns)) %>% "
+"0",""
+"0","ggplot(aes(reorder(gics_sector, -Mean_Return), Mean_Return, fill = Mean_Return))+"
+"0","  geom_col()+"
+"0","  coord_flip()+"
+"0","  theme_classic()+"
+"0","  theme(legend.position=""none"")+"
+"0","  labs(title = ""Average Return by Sector Over Last Month"", y = ""Mean Return"", x = ""GICS Sector"")"

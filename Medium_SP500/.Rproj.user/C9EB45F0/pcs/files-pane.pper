@@ -1,0 +1,9 @@
+{
+    "path" : "~/Medium_SP500",
+    "sortOrder" : [
+        {
+            "ascending" : true,
+            "columnIndex" : 2
+        }
+    ]
+}

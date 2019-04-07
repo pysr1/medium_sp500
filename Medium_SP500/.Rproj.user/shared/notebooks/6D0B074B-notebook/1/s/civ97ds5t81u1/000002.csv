@@ -1,0 +1,4 @@
+"0","tickers_df %>% "
+"0","  filter(security == 'Dow Inc.') %>% "
+"0","  ggplot(aes(date, adjusted))+"
+"0","  geom_line()"

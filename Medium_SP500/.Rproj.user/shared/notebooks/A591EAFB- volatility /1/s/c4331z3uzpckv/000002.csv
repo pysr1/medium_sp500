@@ -1,0 +1,10 @@
+"0","```r
+# grab 9 random tickers 
+random_tickers = sample(sp500tickers$Symbol, size = 9)
+# filter the dataframe to return only these random tickers and plot
+tickers_df %>% filter(symbol %in% random_tickers) %>% 
+  ggplot(aes(date, adjusted))+
+  geom_smooth(method = 'lm', alpha = 0.3)+
+  geom_line(size = 0.2)+
+  facet_wrap(~symbol, scales = 'free_y')
+```"

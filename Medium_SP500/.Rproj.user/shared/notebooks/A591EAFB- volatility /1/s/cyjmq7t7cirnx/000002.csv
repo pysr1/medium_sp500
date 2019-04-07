@@ -1,0 +1,11 @@
+"0","```r
+daily_sector = tickers_df %>% group_by(security, gics_sector, symbol) %>% 
+tq_transmute(select     = adjusted, 
+              mutate_fun = periodReturn, 
+              period     = \"daily\") %>% ungroup()
+  
+
+daily_sector %>% ggplot(aes(daily.returns))+
+  geom_histogram(bins = 50)+
+  facet_wrap(~gics_sector)
+```"

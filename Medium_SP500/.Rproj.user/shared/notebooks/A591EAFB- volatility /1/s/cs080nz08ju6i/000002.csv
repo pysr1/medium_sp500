@@ -1,0 +1,11 @@
+"0","```r
+hardware = c('Intel Corp.', 'Advanced Micro Devices Inc', 'Nvidia Corporation')
+tickers_df %>% 
+  filter(security %in% hardware) %>% 
+  select(date, adjusted, security) %>% 
+  ggplot(aes(date, adjusted))+
+  geom_point()+
+  geom_smooth()+
+  theme_classic()+
+  facet_wrap(~security, scales = 'free_y')
+```"

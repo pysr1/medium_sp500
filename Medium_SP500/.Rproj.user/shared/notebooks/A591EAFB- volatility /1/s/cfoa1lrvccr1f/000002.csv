@@ -1,0 +1,11 @@
+"0","```r
+tickers_df %>% 
+# select just the symbol column
+select(symbol)%>% 
+# get the distinct values
+distinct()%>% 
+# count the distinct values 
+count() %>% 
+# we can use select to rename columns 
+select(\"Total Number of Tickers\" = n)
+```"

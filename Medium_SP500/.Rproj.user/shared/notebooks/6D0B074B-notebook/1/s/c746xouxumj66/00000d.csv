@@ -1,0 +1,6 @@
+"0","plot = avg_return %>% ggplot(aes(avg_return, Volatility))+"
+"0","  geom_text(aes(label = symbol), size = 3)+"
+"0","  labs(title = ""Average Return vs Volatility Over Last 3 Months In SP500"", x = ""Average Return"", subtitle = ""Data Source: Yahoo Finance"")+"
+"0","  theme_minimal()"
+"0","    "
+"0","plot "
