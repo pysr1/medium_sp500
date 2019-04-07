@@ -1,7 +1,0 @@
-"0",""
-"0","avg_return %>% head(20) %>% ggplot(aes(reorder(security, -avg_return), avg_return, fill = avg_return))+"
-"0","  geom_col()+"
-"0","  coord_flip()+"
-"0","  labs(title = ""Assets With Highest Returns In SP500 Over Past 3 Month"", x = ""Security"", y = ""Average Return"")+"
-"0","  theme_classic()+"
-"0","  theme(legend.position=""none"")"

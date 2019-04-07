@@ -1,4 +1,0 @@
-"0","avg_return =daily_sector %>% "
-"0","  group_by(security, gics_sector, symbol) %>%"
-"0","  summarise(avg_return = round(mean(daily.returns), 4),Volatility = sd(daily.returns), cv = Volatility/avg_return) %>%         arrange(desc(avg_return), desc(Volatility))"
-"0","avg_return %>% head()"

@@ -1,3 +1,0 @@
-"0","avg_return = avg_return %>% "
-"0","  mutate(Indicator = case_when(symbol %in% c('FOX', 'FOXA') ~ ""Fox Corporation"","
-"0","                               TRUE ~ ""Rest of SP500""))"

@@ -218,10 +218,9 @@ plot = avg_return %>% ggplot(aes(text = paste("Average Return", avg_return), tex
   geom_text(aes(x = avg_return, y = Volatility, label = symbol), size = 3)+
   labs(title = "Average Return vs Volatility Over Last 3 Months In SP500", x = "Average Return", subtitle = "Data Source: Yahoo Finance")+
   theme_minimal()
-    
 
-library(plotly)
-ggplotly(plot) 
+    
+ggsave("sp500plot.png", plot = plot)
 ```
 
 

@@ -1,8 +1,0 @@
-"0","symbols = c('FOX', 'FOXA')"
-"0","fox = tq_get(symbols, from = '2017/01/01')"
-"0","fox %>% "
-"0","  ggplot(aes(date, adjusted))+"
-"0","  geom_line()+"
-"0","  geom_smooth(method = 'lm', alpha = 0.3)+"
-"0","  facet_wrap(~symbol)+"
-"0","  theme_classic()"
