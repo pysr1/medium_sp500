@@ -7,7 +7,7 @@ Today I wanted to walk through a quick example, combining scraping, calls to the
 
 In the R programming langauge there is a set of packages that make up what is called the **tidyverse**. These packages are mostly maintained by engineers at Rstudio and provide a simple, integrated and uniform way to maninipulate data in R.  
 
-! add tidyverse picture !
+
 
 I'll start by importing a the packages that I'll need. You'll notice that most of the packages that I use are from the tidyverse.
 
